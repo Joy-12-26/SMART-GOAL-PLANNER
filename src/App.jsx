@@ -1,37 +1,45 @@
- import React, { useState } from "react";
+ import React, { useEffect, useState } from 'react'
+import axios from 'axios'
+import GoalList from './components/GoalList'
+import GoalForm from './components/GoalForm'
+import DepositForm from './components/DepositForm'
+import Overview from './components/Overview'
 
-function Add({ onAdd }) {
-  const [name, setName] = useState("");
-  const [desc, setDesc] = useState("");
+function App() {
+  const [goals, setGoals] = useState([])
 
-  function handleClick() {
-    if (!name || !desc) return;
-    onAdd(name, desc);
-    setName("");
-    setDesc("");
+  useEffect(() => {
+    axios.get('http://localhost:3000/goals')
+      .then(res => setGoals(res.data))
+      .catch(err => console.error(err))
+  }, [])
+
+  const addGoal = (newGoal) => {
+    axios.post('http://localhost:3000/goals', newGoal)
+      .then(res => setGoals([...goals, res.data]))
+  }
+
+  const updateGoal = (id, updatedFields) => {
+    axios.patch(`http://localhost:3000/goals/${id}`, updatedFields)
+      .then(res => {
+        setGoals(goals.map(goal => goal.id === id ? res.data : goal))
+      })
+  }
+
+  const deleteGoal = (id) => {
+    axios.delete(`http://localhost:3000/goals/${id}`)
+      .then(() => setGoals(goals.filter(goal => goal.id !== id)))
   }
 
   return (
-    <div className="add-form">
-      <input
-        id="goal-name"
-        type="text"
-        placeholder="Goal Name"
-        value={name}
-        onClick={() => setName(prompt("Enter goal name") || "")}
-        readOnly
-      />
-      <input
-        id="goal-desc"
-        type="text"
-        placeholder="Goal Description"
-        value={desc}
-        onClick={() => setDesc(prompt("Enter goal description") || "")}
-        readOnly
-      />
-      <button id="add-btn" onClick={handleClick}>Add Goal</button>
+    <div className="app-container">
+      <h1>Smart Goal Planner</h1>
+      <Overview goals={goals} />
+      <GoalForm onAddGoal={addGoal} />
+      <DepositForm goals={goals} onUpdateGoal={updateGoal} />
+      <GoalList goals={goals} onUpdateGoal={updateGoal} onDeleteGoal={deleteGoal} />
     </div>
-  );
+  )
 }
 
-export default Add;
+export default App
